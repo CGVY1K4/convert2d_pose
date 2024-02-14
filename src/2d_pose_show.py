@@ -6,6 +6,9 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Vector3
 import cv2
 
+import tf
+from geometry_msgs.msg import Pose
+
 
 # 3D -> 2D 변환 함수
 def transform_3d_to_2d(point_3d, scale_factor, grid_min, grid_max):
@@ -29,11 +32,23 @@ def camera_pose_callback(msg):
     # 변환된 2D 좌표 로깅
     rospy.loginfo(f"Transformed 2D position: (x: {point_2d[1]}, y: {point_2d[0]})")
 
+
+    q = tf.transformations.quaternion_from_euler(
+        msg.pose.orientation.x,
+        msg.pose.orientation.y,
+        msg.pose.orientation.z,
+        msg.pose.orientation.w
+    )
+    
+    m = tf.transformations.euler_matrix(q[0], q[1], q[2])
+    roll, pitch, yaw = tf.transformations.euler_from_matrix(m)
+
+    
     msg = Vector3()
     msg.x = point_2d[1]
     msg.y = point_2d[0]
-    msg.z = 0
-
+    msg.z = yaw
+    
     currpos_pub.publish(msg)
 
     # 이미지에 2D 좌표 표시
