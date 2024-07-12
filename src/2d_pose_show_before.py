@@ -93,16 +93,16 @@ def camera_pose_callback(msg):
     global camera_poses
     camera_poses.add((point_2d[0], point_2d[1]))
     angle = transforms3d.euler.quat2euler([msg.pose.pose.orientation.w, msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z], axes='sxyz')
-    yaw = angle[2]
-    rospy.loginfo(f"Transformed yaw: (z: {np.rad2deg(yaw)})")
+    yaw = angle[2] - 3.14/4 # need normalization???
+    rospy.loginfo(f"Transformed yaw: (z: {yaw})")
     new_msg.z = yaw
 
     currpos_pub.publish(new_msg)
 
-    draw_image(point_2d[0], point_2d[1])
+    draw_image(point_2d[0], point_2d[1], msg.pose.pose.orientation.w)
 
 
-def draw_image(x, y):
+def draw_image(x, y, yaw):
     # 이미지에 2D 좌표 표시
     out_fname = 'output'  # 출력 파일 이름 지정
     color_image = cv2.imread('/home/cgvlab/catkin_ws/src/convert2d_pose/src/map_0429_2.jpg')  # 기존 이미지 파일 로드, 'your_image_path.png'는 실제 이미지 경로로 변경
@@ -121,7 +121,16 @@ def draw_image(x, y):
         cv2.circle(color_image, (i[1], i[0]), 1, (0, 255, 0), -1)  # 녹색 원으로 표시
     
     cv2.circle(color_image, (y, x), 5, (0, 255, 0), -1)  # 녹색 원으로 표시
-    
+
+    # 화살표 길이
+    arrow_length = 5
+
+    # 화살표 끝점 계산
+    end_x = int(x + arrow_length * np.sin(yaw))
+    end_y = int(y + arrow_length * np.cos(yaw))
+
+    # 화살표 그리기
+    cv2.arrowedLine(color_image, (y, x), (end_y, end_x), (0, 255, 0), 2, tipLength=0.5)
 
     # 변환된 이미지 저장 및 표시
     # cv2.imwrite(f'{out_fname}.png', color_image)  # 이미지 파일로 저장
